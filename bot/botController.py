@@ -1,3 +1,4 @@
+from datetime import datetime
 import requests
 import misc.misc
 import dbController
@@ -6,11 +7,12 @@ import re
 URL = 'https://api.telegram.org/bot{0}/'.format(misc.misc.token)
 emoji = {1: '1\ufe0f\u20e3', 2: '2\ufe0f\u20e3', 3: '3\ufe0f\u20e3', 4: '4\ufe0f\u20e3', 5: '5\ufe0f\u20e3', \
          6: '6\ufe0f\u20e3', 7: '7\ufe0f\u20e3', 8: '8\ufe0f\u20e3', 9: '9\ufe0f\u20e3', 10: '\ud83d\udd1f'}
+dayofweek = {'ПН': 'Понеділок', 'ВТ': 'Вівторок', 'СР': 'Середа', 'ЧТ': 'Четвер', 'ПТ': 'П\'ятниця'}
 
 
-def sendMessage(chat_id, text):
+def sendMessage(chat_id, text, parse_mode = 'Markdown'):
     url = URL + 'sendMessage'
-    answer = {'chat_id': chat_id, 'text': text}
+    answer = {'chat_id': chat_id, 'text': text, 'parse_mode': parse_mode}
     r = requests.post(url, json=answer)
     return r.json()
 
@@ -39,7 +41,7 @@ def manageBotCommand(dataJson):
     command = dataJson['message']['text']
     chat_id = dataJson['message']['chat']['id']
     if command == '/start':
-        text = "Привіт, я бот твого улюбленого університету\n Чим я можу тобі допомогти?"
+        text = "Привіт, я бот твого улюбленого університету\nЧим я можу тобі допомогти?"
         addKeyboard(chat_id, text, 'Розклад')
     elif command == '/support':
         text = "Якщо в тебе є якісь пропозиції щодо бота, або ти знайшов недостовірну інформацію \
@@ -70,7 +72,7 @@ def manageCallbackQuery(dataJson):
     # Захоплення факультетів, надсилання курсів
     if re.search('facultet_\w+', data):
         callbackText = data.split('_')
-        buttons = makeButtons(callbackText[1] + '_course_', 2, ['1', '2', '3', '4', '<< Назад'])
+        buttons = makeButtons(callbackText[1] + '_course_', 2, ['1', '2', '3', '4', '5', '6', '<< Назад'])
         editCallbackMessage(chat_id, message_id, buttons)
 
     # Захоплення курсів, надсилання груп
@@ -122,7 +124,7 @@ def manageCallbackQuery(dataJson):
 
 def sendTimetable(chat_id, day, group):
     data = dbController.getTimetable(day, group)
-    text = ''
+    text = '\t**{0}**\n\n'.format(dayofweek[day])
     for row in data:
         if row[4] == 'practic':
             type = 'практична'
@@ -133,8 +135,18 @@ def sendTimetable(chat_id, day, group):
             auditory = ' ' + str(row[2]) + ' ауд.'
         else:
             auditory = ''
+
+        if not row[-1] == None:
+            alternation = '(' + row[-1] + ')'
+            d = datetime.now()
+            if d.isocalendar()[1] // 2 == 0 and alternation == '(чисельник)':
+                alternation = '**{0}**'.format(alternation)
+            elif d.isocalendar()[1] // 2 == 1 and alternation == '(знаменник)':
+                alternation = '**{0}**'.format(alternation)
+        else:
+            alternation = ''
         number = emoji[row[0]]
-        text = text + '{0} пара - {1}, {2} {3}\n\n'.format(number, row[1], type, auditory)
+        text = text + '{0} пара - {1}, {2} {3} {4}\n\n'.format(number, row[1], type, auditory, alternation)
     sendMessage(chat_id, text)
 
 

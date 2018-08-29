@@ -5,12 +5,10 @@ from flask_sslify import SSLify
 import msgParser as msgPr
 import botController as bot
 
-
 app = Flask(__name__)
 sslify = SSLify(app)
 
-
-@app.route('/secreturlforbot', methods=['POST', 'GET'])
+@app.route('/secureurlforbot2', methods=['POST', 'GET'])
 def index():
     if request.method == 'POST':
         r = request.get_json()
