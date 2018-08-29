@@ -6,7 +6,7 @@ c = conn.cursor()
 
 def getTimetable(day, group):
     timetable = []
-    sql = 'SELECT * FROM timetable WHERE (studing_day = \'{0}\') and (studing_group = \'{1}\')'.format(day, group)
+    sql = 'SELECT * FROM timetable WHERE (studing_day = \'{0}\') and (studing_group = \'{1}\') ORDER BY number'.format(day, group)
     for row in c.execute(sql):
         timetable.append(row)
     return timetable
