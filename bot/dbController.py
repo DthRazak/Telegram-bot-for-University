@@ -32,3 +32,40 @@ def getShortFacultetName(name):
     sql = 'SELECT short_name FROM facultets WHERE name = \'{0}\''.format(name)
     c.execute(sql)
     return c.fetchall()[0][0]
+
+
+def registerUser(chat_id, group, username = 'NULL'):
+    if not username == 'NULL':
+        sql = 'INSERT INTO users (chat_id, studing_group, username) VALUES ({0}, \'{1}\', \'{2}\')'.format(chat_id, group, username)
+    else:
+        sql = 'INSERT INTO users (chat_id, studing_group, username) VALUES ({0}, \'{1}\', {2})'.format(chat_id, group, username)
+    try:
+        c.execute(sql)
+        conn.commit()
+    except sqlite3.IntegrityError:
+        return False
+
+    return True
+
+
+def deleteUser(chat_id):
+    sql = 'DELETE FROM users WHERE chat_id = {0}'.format(chat_id)
+    c.execute(sql)
+    conn.commit()
+
+
+def isUserRegistered(chat_id):
+    sql = 'SELECT * FROM users WHERE chat_id = {0}'.format(chat_id)
+    c.execute(sql)
+    if not c.fetchone() == None:
+        return True
+    else:
+        return False
+
+
+def getUsers():
+    sql = 'SELECT * FROM users'
+    users = []
+    for row in c.execute(sql):
+        users.append(row)
+    return users

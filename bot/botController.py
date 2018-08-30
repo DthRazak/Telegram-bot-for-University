@@ -8,6 +8,7 @@ URL = 'https://api.telegram.org/bot{0}/'.format(misc.misc.token)
 emoji = {1: '1\ufe0f\u20e3', 2: '2\ufe0f\u20e3', 3: '3\ufe0f\u20e3', 4: '4\ufe0f\u20e3', 5: '5\ufe0f\u20e3', \
          6: '6\ufe0f\u20e3', 7: '7\ufe0f\u20e3', 8: '8\ufe0f\u20e3', 9: '9\ufe0f\u20e3', 10: '\ud83d\udd1f'}
 dayofweek = {'ПН': 'Понеділок', 'ВТ': 'Вівторок', 'СР': 'Середа', 'ЧТ': 'Четвер', 'ПТ': 'П\'ятниця'}
+dowENUA = {'Monday': 'ПН', 'Tuesday': 'ВТ', 'Wednesday': 'СР', 'Thursday': 'ЧТ', 'Friday': 'ПТ'}
 
 
 def sendMessage(chat_id, text, parse_mode = 'Markdown'):
@@ -46,6 +47,33 @@ def manageBotCommand(dataJson):
     elif command == '/support':
         text = "Якщо в тебе є якісь пропозиції щодо бота, або ти знайшов недостовірну інформацію \
         то напиши мені на електронну пошту dth.razak@gmail.com"
+        sendMessage(chat_id, text)
+    elif re.search(r'^\/register \w+-\d+$', command):
+        group = command.split(' ')[1]
+        try:
+            username = dataJson['message']['from']['username']
+        except KeyError:
+            username = 'NULL'
+        if not dbController.isUserRegistered(chat_id):
+            if dbController.registerUser(chat_id, group, username):
+                sendMessage(chat_id, 'Реєстрація пройшла успішно')
+            else:
+                sendMessage(chat_id, 'Щось пішло не так, спробуйте ще раз')
+        else:
+            sendMessage(chat_id, 'Ви вже зареєстровані')
+    elif command == '/deleteme':
+        if dbController.isUserRegistered(chat_id):
+            dbController.deleteUser(chat_id)
+            sendMessage(chat_id, 'Видалення пройшло успішно')
+        else:
+            sendMessage(chat_id, 'Ви ще не були зареєстровані')
+    elif command == '/help':
+        text = '**Допомога**\n' \
+            'Щоб дізнатися розклад - натисніть \"Розклад\" на клавіатурі\n' \
+            'Для отримання розкладу кожен день відправ мені повідомлення у такому форматі:' \
+            ' \"/register group\", де group твоя група набрана великими літерами\n' \
+            'Щоб скасувати розсилку розкладу відправ мені команду /deleteme\n ' \
+            'Підтримка - /support'
         sendMessage(chat_id, text)
     else:
         text = "Нажаль я не розумію такої команди("
@@ -122,7 +150,7 @@ def manageCallbackQuery(dataJson):
         sendTimetable(chat_id, day, group)
 
 
-def sendTimetable(chat_id, day, group):
+def sendTimetable(chat_id, day, group, daily = False):
     data = dbController.getTimetable(day, group)
     text = '\t**{0}**\n\n'.format(dayofweek[day])
     for row in data:
@@ -139,10 +167,10 @@ def sendTimetable(chat_id, day, group):
         if not row[-1] == None:
             alternation = '(' + row[-1] + ')'
             d = datetime.now()
-            if d.isocalendar()[1] // 2 == 0 and alternation == '(чисельник)':
-                alternation = '**{0}**'.format(alternation)
-            elif d.isocalendar()[1] // 2 == 1 and alternation == '(знаменник)':
-                alternation = '**{0}**'.format(alternation)
+            if d.isocalendar()[1] // 2 == 1 and alternation == '(чисельник)' and daily == True:
+                alternation = ''
+            elif d.isocalendar()[1] // 2 == 0 and alternation == '(знаменник)' and daily == True:
+                alternation = ''
         else:
             alternation = ''
         number = emoji[row[0]]
@@ -198,6 +226,14 @@ def makeButtons(callbackText = '', number = 3, buttonsArray = []):
 
     reply = {'inline_keyboard': arrays}
     return reply
+
+
+def sendDailyTimetable():
+    d = datetime.now()
+    if d.strftime('%A') in dowENUA:
+        users = dbController.getUsers()
+        for user in users:
+            sendTimetable(user[1], dowENUA[d.strftime('%A')], user[2])
 
 
 def addKeyboard(chat_id, text, title):

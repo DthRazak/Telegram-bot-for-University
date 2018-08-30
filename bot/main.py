@@ -8,7 +8,8 @@ import botController as bot
 app = Flask(__name__)
 sslify = SSLify(app)
 
-@app.route('/secureurlforbot2', methods=['POST', 'GET'])
+
+@app.route('/', methods=['POST', 'GET'])
 def index():
     if request.method == 'POST':
         r = request.get_json()
