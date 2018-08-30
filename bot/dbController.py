@@ -69,5 +69,3 @@ def getUsers():
     for row in c.execute(sql):
         users.append(row)
     return users
-
-print(getTimetable('ПН', 'ПМІ-22') == [])

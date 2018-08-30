@@ -153,7 +153,7 @@ def manageCallbackQuery(dataJson):
 def sendTimetable(chat_id, day, group, daily = False):
     data = dbController.getTimetable(day, group)
     text = ''
-    if not data == []:
+    if data == []:
         text = '\t**{0}**\t {1}\n\n'.format(dayofweek[day], group)
     for row in data:
         if row[4] == 'practic':
