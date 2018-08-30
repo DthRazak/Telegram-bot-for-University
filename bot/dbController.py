@@ -14,7 +14,7 @@ def getTimetable(day, group):
 
 def getGroops(facultet, course):
     groops = []
-    sql = 'SELECT * FROM studing_group WHERE (name LIKE \'___-{0}_\') and (facultet = \'{1}\');'.format(course, facultet)
+    sql = 'SELECT * FROM studing_group WHERE (name LIKE \'___-{0}_\') and (facultet = \'{1}\') ORDER BY name;'.format(course, facultet)
     for row in c.execute(sql):
         groops.append(row)
     return groops
