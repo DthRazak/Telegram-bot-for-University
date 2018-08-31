@@ -33,9 +33,17 @@ def editCallbackMessage(chat_id, message_id, reply_markup):
 
 
 def manageSimpleMeassage(dataJson):
-    chat_id = dataJson['message']['chat']['id']
-    text = 'Нажаль зараз я не володію штучним інтелектом і тому я не можу відповісти на твоє повідомлення'
-    sendMessage(chat_id, text)
+    try:
+        chat_id = dataJson['message']['chat']['id']
+        text = 'Нажаль зараз я не володію штучним інтелектом і тому я не можу відповісти на твоє повідомлення'
+        sendMessage(chat_id, text)
+    except KeyError:
+        try:
+            chat_id = dataJson['edited_message']['chat']['id']
+            text = 'Спочатку навчись писати без помилок, а потім відправляй мені повідомлення)'
+            sendMessage(chat_id, text)
+        except KeyError:
+            pass
 
 
 def manageBotCommand(dataJson):
@@ -166,17 +174,28 @@ def sendTimetable(chat_id, day, group, daily = False):
         else:
             auditory = ''
 
-        if not row[-1] == None:
-            alternation = '(' + row[-1] + ')'
-            d = datetime.now()
-            if d.isocalendar()[1] // 2 == 1 and alternation == '(чисельник)' and daily == True:
+        if daily == False:
+            if not row[-1] == None:
+                alternation = '(' + row[-1] + ')'
+            else:
                 alternation = ''
-            elif d.isocalendar()[1] // 2 == 0 and alternation == '(знаменник)' and daily == True:
-                alternation = ''
+            number = emoji[row[0]]
+            text = text + '{0} пара - {1}, {2} {3} {4}\n\n'.format(number, row[1], type, auditory, alternation)
+
         else:
-            alternation = ''
-        number = emoji[row[0]]
-        text = text + '{0} пара - {1}, {2} {3} {4}\n\n'.format(number, row[1], type, auditory, alternation)
+            if not row[-1] == None:
+                alternation = '(' + row[-1] + ')'
+            else:
+                alternation = ''
+            d = datetime.now()
+            if d.isocalendar()[1] % 2 == 1 and alternation == '(чисельник)' and daily == True:
+                pass
+            elif d.isocalendar()[1] % 2 == 0 and alternation == '(знаменник)' and daily == True:
+                pass
+            else:
+                number = emoji[row[0]]
+                text = text + '{0} пара - {1}, {2} {3} {4}\n\n'.format(number, row[1], type, auditory, alternation)
+
     sendMessage(chat_id, text)
 
 
@@ -235,7 +254,7 @@ def sendDailyTimetable():
     if d.strftime('%A') in dowENUA:
         users = dbController.getUsers()
         for user in users:
-            sendTimetable(user[1], dowENUA[d.strftime('%A')], user[2])
+            sendTimetable(user[1], dowENUA[d.strftime('%A')], user[2], daily = True)
 
 
 def addKeyboard(chat_id, text, title):
