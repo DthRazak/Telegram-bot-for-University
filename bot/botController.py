@@ -3,6 +3,9 @@ import requests
 import misc.misc
 import dbController
 import re
+import logging
+from logging.handlers import TimedRotatingFileHandler
+import os
 
 URL = 'https://api.telegram.org/bot{0}/'.format(misc.misc.token)
 emoji = {1: '1\ufe0f\u20e3', 2: '2\ufe0f\u20e3', 3: '3\ufe0f\u20e3', 4: '4\ufe0f\u20e3', 5: '5\ufe0f\u20e3', \
@@ -10,6 +13,14 @@ emoji = {1: '1\ufe0f\u20e3', 2: '2\ufe0f\u20e3', 3: '3\ufe0f\u20e3', 4: '4\ufe0f
 dayofweek = {'ПН': 'Понеділок', 'ВТ': 'Вівторок', 'СР': 'Середа', 'ЧТ': 'Четвер', 'ПТ': 'П\'ятниця'}
 dowENUA = {'Monday': 'ПН', 'Tuesday': 'ВТ', 'Wednesday': 'СР', 'Thursday': 'ЧТ', 'Friday': 'ПТ'}
 
+log_format = "%(asctime)s - %(levelname)s - %(message)s"
+logger = logging.getLogger('msgLogs')
+logger.setLevel(logging.INFO)
+formater = logging.Formatter(log_format)
+path = os.path.abspath(os.path.dirname(__file__))
+handler = TimedRotatingFileHandler(path + '/logs/msg.log', when='W6', interval=1, backupCount=4)
+handler.setFormatter(formater)
+logger.addHandler(handler)
 
 def sendMessage(chat_id, text, parse_mode = 'Markdown'):
     url = URL + 'sendMessage'
@@ -32,7 +43,7 @@ def editCallbackMessage(chat_id, message_id, reply_markup):
     return r.json()
 
 
-def manageSimpleMeassage(dataJson):
+def manageSimpleMessage(dataJson):
     try:
         chat_id = dataJson['message']['chat']['id']
         text = 'Нажаль зараз я не володію штучним інтелектом і тому я не можу відповісти на твоє повідомлення'
@@ -41,8 +52,11 @@ def manageSimpleMeassage(dataJson):
         try:
             chat_id = dataJson['edited_message']['chat']['id']
             text = 'Спочатку навчись писати без помилок, а потім відправляй мені повідомлення)'
+            logMsg = 'editedMessage: chat_id: {0}, message: {1}'.format(chat_id, dataJson['text'])
+            logger.warning(logMsg)
             sendMessage(chat_id, text)
         except KeyError:
+            logger.error('Some error happened!!!')
             pass
 
 
@@ -65,6 +79,8 @@ def manageBotCommand(dataJson):
         if not dbController.isUserRegistered(chat_id):
             if dbController.registerUser(chat_id, group, username):
                 sendMessage(chat_id, 'Реєстрація пройшла успішно')
+                logMsg = 'User registered chat_id: {0}'.format(chat_id)
+                logger.info(logMsg)
             else:
                 sendMessage(chat_id, 'Щось пішло не так, спробуйте ще раз')
         else:
@@ -73,6 +89,8 @@ def manageBotCommand(dataJson):
         if dbController.isUserRegistered(chat_id):
             dbController.deleteUser(chat_id)
             sendMessage(chat_id, 'Видалення пройшло успішно')
+            logMsg = 'User was deleted chat_id: {0}'.format(chat_id)
+            logger.info(logMsg)
         else:
             sendMessage(chat_id, 'Ви ще не були зареєстровані')
     elif command == '/help':
@@ -155,6 +173,12 @@ def manageCallbackQuery(dataJson):
     else:
         day = data.split('_')[4]
         group = data.split('_')[3]
+        try:
+            username = dataJson['message']['from']['username']
+        except KeyError:
+            username = ''
+        logMsg = 'Timetable for {0} {1}, group: {2}'.format(username, chat_id, group)
+        logger.info(logMsg)
         sendTimetable(chat_id, day, group)
 
 
@@ -164,10 +188,7 @@ def sendTimetable(chat_id, day, group, daily = False):
     if not data == []:
         text = '\t**{0}**\t {1}\n\n'.format(dayofweek[day], group)
     for row in data:
-        if row[4] == 'practic':
-            type = 'практична'
-        else:
-            type = 'лекція'
+        type = row[4]
 
         if not row[2] == None:
             auditory = ' ' + str(row[2]) + ' ауд.'

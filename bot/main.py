@@ -20,7 +20,7 @@ def index():
         elif msgPr.isCallbackQuery(r):
             bot.manageCallbackQuery(r)
         else:
-            bot.manageSimpleMeassage(r)
+            bot.manageSimpleMessage(r)
         return jsonify(r)
     return '<h1>Hello bot</h1>'
 
