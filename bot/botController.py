@@ -174,7 +174,7 @@ def manageCallbackQuery(dataJson):
         day = data.split('_')[4]
         group = data.split('_')[3]
         try:
-            username = dataJson['message']['from']['username']
+            username = dataJson['callback_query']['message']['chat']['username']
         except KeyError:
             username = ''
         logMsg = 'Timetable for {0} {1}, group: {2}'.format(username, chat_id, group)
