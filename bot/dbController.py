@@ -161,6 +161,31 @@ def write_timetable(data):
         write_single_record(*data_row[:-1], data_row[-1:].lectors.split(', '))
 
 
+def delete_day_records_for_group(day, group_id):
+    sql = """
+    DELETE FROM 
+        lectors_subjects_composite
+    WHERE c_id in
+        (SELECT 
+            class_id
+            FROM 
+                timetable 
+            WHERE 
+                (group_id = {0})
+            AND
+                (class_id in (SELECT c_id FROM classes WHERE day = \"{1}\")));""".format(group_id, day)
+    c.execute(sql)
+    sql = """
+    DELETE FROM
+        classes
+    WHERE
+        (c_id in (SELECT class_id FROM timetable WHERE group_id = {0}))
+    AND
+        (day = \"{1}\");""".format(group_id, day)
+    c.execute(sql)
+    conn.commit()
+
+
 def register_user(chat_id, group, username='NULL'):
     if not username == 'NULL':
         sql = 'INSERT INTO users (chat_id, studing_group, username) VALUES ({0}, \'{1}\', \'{2}\')'.format(chat_id, group, username)
