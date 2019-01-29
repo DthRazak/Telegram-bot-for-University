@@ -186,11 +186,10 @@ def delete_day_records_for_group(day, group_id):
     conn.commit()
 
 
-def register_user(chat_id, group, username='NULL'):
-    if not username == 'NULL':
-        sql = 'INSERT INTO users (chat_id, studing_group, username) VALUES ({0}, \'{1}\', \'{2}\')'.format(chat_id, group, username)
-    else:
-        sql = 'INSERT INTO users (chat_id, studing_group, username) VALUES ({0}, \'{1}\', {2})'.format(chat_id, group, username)
+def register_user(chat_id, group_id, username='\"NULL\"'):
+    code = hash(str(chat_id))
+    sql = 'INSERT INTO users (chat_id, studing_group, username, verification_code) VALUES ({0}, \'{1}\', \'{2}\', {3}})'\
+        .format(chat_id, group_id, username, code)
     try:
         c.execute(sql)
         conn.commit()
@@ -206,13 +205,22 @@ def delete_user(chat_id):
     conn.commit()
 
 
-def is_user_registered(chat_id):
-    sql = 'SELECT * FROM users WHERE chat_id = {0}'.format(chat_id)
+def subscribe(chat_id):
+    sql = "UPDATE users SET is_subscribed = 1 WHERE chat_id = {0}".format(chat_id)
     c.execute(sql)
-    if c.fetchone() is not None:
-        return True
-    else:
-        return False
+    conn.commit()
+
+
+def unsubscribe(chat_id):
+    sql = "UPDATE users SET is_subscribed = 0 WHERE chat_id = {0}".format(chat_id)
+    c.execute(sql)
+    conn.commit()
+
+
+def is_user_subscribed(chat_id):
+    sql = 'SELECT is_subscribed FROM users WHERE chat_id = {0}'.format(chat_id)
+    c.execute(sql)
+    return c.fetchone()[0]
 
 
 def get_users():
