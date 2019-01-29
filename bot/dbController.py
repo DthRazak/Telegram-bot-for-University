@@ -54,6 +54,25 @@ def get_facultets():
     return dict(facultets)
 
 
+def find_lector(name, day):
+    l_id = get_lector_id(name)
+    if l_id is None:
+        return []
+    sql = """
+    SELECT
+        number,
+        auditory
+    FROM
+        classes
+        INNER JOIN (SELECT * FROM lectors_subjects_composite WHERE l_id = {0}) lsc 
+            ON classes.c_id = lsc.c_id
+    WHERE day = \"{1}\"""".format(l_id, day)
+    timetable = list()
+    for row in c.execute(sql):
+        timetable.append(row)
+    return timetable
+
+
 def get_lectors(name):
     lectors = list()
     sql = 'SELECT l_id, name FROM lectors ' \
