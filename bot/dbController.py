@@ -1,6 +1,9 @@
 import sqlite3
 import pandas as pd
 import os
+from logger import db_logger as logger
+
+
 path = os.path.abspath(os.path.dirname(__file__))
 conn = sqlite3.connect(path + '/database/database.db', check_same_thread=False)
 c = conn.cursor()
@@ -103,6 +106,8 @@ def add_subject(name):
     sql = "INSERT INTO subjects (name) VALUES (\"{0}\")".format(name)
     c.execute(sql)
     conn.commit()
+    log_msg = 'New subject added ({0})'.format(name)
+    logger.info(log_msg)
 
 
 def add_lector(name):
@@ -110,6 +115,8 @@ def add_lector(name):
         .format(name)
     c.execute(sql)
     conn.commit()
+    log_msg = 'New lector ({0})'.format(name)
+    logger.info(log_msg)
 
 
 def add_group(name, facultet_id):
@@ -118,6 +125,8 @@ def add_group(name, facultet_id):
     sql = "INSERT INTO groups (name, facultet) VALUES (\"{0}\", \"{1}\");".format(name, facultet_id)
     c.execute(sql)
     conn.commit()
+    log_msg = 'New group ({0}) added'.format(name)
+    logger.info(log_msg)
 
 
 def add_class(number, day, classes_type, auditory, alternation):
@@ -156,7 +165,7 @@ def write_single_record(group, day, number, subject_name, class_type, auditory='
     subject_id = get_subject_id(subject_name)
     lectors_id = [get_lector_id(l) for l in lectors]
     add_class(number, day, class_type, auditory, alternation)
-    class_id = c.lastrowid # weak method
+    class_id = c.lastrowid  # weak method
     add_lectors_subjects_composite(subject_id, class_id, lectors_id)
     add_timetable(group_id, class_id)
 
@@ -178,6 +187,8 @@ def write_timetable(data):
     for i in range(0, len(data)):
         data_row = data.loc[i]
         write_single_record(*data_row[:-1], data_row[-1:].lectors.split(', '))
+    log_msg = 'New timetable records added for group {0}'.format(data['group'].values[0])
+    logger.info(log_msg)
 
 
 def delete_day_records_for_group(day, group_id):
@@ -203,37 +214,47 @@ def delete_day_records_for_group(day, group_id):
         (day = \"{1}\");""".format(group_id, day)
     c.execute(sql)
     conn.commit()
+    log_msg = 'Records deleted by (day={0}, group_id={1})'.format(day, group_id)
+    logger.info(log_msg)
 
 
-def register_user(chat_id, group_id, username='\"NULL\"'):
+def register_user(chat_id, username='NULL'):
     code = hash(str(chat_id))
-    sql = 'INSERT INTO users (chat_id, studing_group, username, verification_code) VALUES ({0}, \'{1}\', \'{2}\', {3}})'\
-        .format(chat_id, group_id, username, code)
-    try:
-        c.execute(sql)
-        conn.commit()
-    except sqlite3.IntegrityError:
-        return False
-
-    return True
+    sql = 'INSERT INTO users (chat_id, username, verification_code) VALUES ({0}, \"{1}\", {2})'\
+        .format(chat_id, username, code)
+    c.execute(sql)
+    conn.commit()
+    log_msg = 'User {0} {1} was registered'.format(chat_id, username)
+    logger.info(log_msg)
 
 
 def delete_user(chat_id):
     sql = 'DELETE FROM users WHERE chat_id = {0}'.format(chat_id)
     c.execute(sql)
     conn.commit()
+    log_msg = 'User {0} was deleted'.format(chat_id)
+    logger.info(log_msg)
 
 
-def subscribe(chat_id):
-    sql = "UPDATE users SET is_subscribed = 1 WHERE chat_id = {0}".format(chat_id)
+def subscribe(chat_id, group):
+    group_id = get_group_id(group)
+    if group_id is None:
+        log_msg = 'User {0} is trying to subscribe to non-existing group ({1})'.format(chat_id, group)
+        logger.warning(log_msg)
+        return
+    sql = "UPDATE users SET is_subscribed = 1, studing_group = {0}} WHERE chat_id = {1}".format(group_id, chat_id)
     c.execute(sql)
     conn.commit()
+    log_msg = 'User {0} was subscribed'.format(chat_id)
+    logger.info(log_msg)
 
 
 def unsubscribe(chat_id):
     sql = "UPDATE users SET is_subscribed = 0 WHERE chat_id = {0}".format(chat_id)
     c.execute(sql)
     conn.commit()
+    log_msg = 'User {0} was unsubscribed'.format(chat_id)
+    logger.info(log_msg)
 
 
 def is_user_subscribed(chat_id):

@@ -1,11 +1,10 @@
 from datetime import datetime
 import requests
 import misc.misc
-import dbController
+import dbController as dbc
 import re
-import logging
-from logging.handlers import TimedRotatingFileHandler
-import os
+from logger import msg_logger as logger
+
 
 URL = 'https://api.telegram.org/bot{0}/'.format(misc.misc.token)
 emoji = {1: '1\ufe0f\u20e3', 2: '2\ufe0f\u20e3', 3: '3\ufe0f\u20e3', 4: '4\ufe0f\u20e3', 5: '5\ufe0f\u20e3', \
@@ -13,14 +12,6 @@ emoji = {1: '1\ufe0f\u20e3', 2: '2\ufe0f\u20e3', 3: '3\ufe0f\u20e3', 4: '4\ufe0f
 dayofweek = {'ПН': 'Понеділок', 'ВТ': 'Вівторок', 'СР': 'Середа', 'ЧТ': 'Четвер', 'ПТ': 'П\'ятниця'}
 dowENUA = {'Monday': 'ПН', 'Tuesday': 'ВТ', 'Wednesday': 'СР', 'Thursday': 'ЧТ', 'Friday': 'ПТ'}
 
-log_format = "%(asctime)s - %(levelname)s - %(message)s"
-logger = logging.getLogger('msgLogs')
-logger.setLevel(logging.INFO)
-formater = logging.Formatter(log_format)
-path = os.path.abspath(os.path.dirname(__file__))
-handler = TimedRotatingFileHandler(path + '/logs/msg.log', when='W6', interval=1, backupCount=4)
-handler.setFormatter(formater)
-logger.addHandler(handler)
 
 def sendMessage(chat_id, text, parse_mode = 'Markdown'):
     url = URL + 'sendMessage'
@@ -76,8 +67,8 @@ def manageBotCommand(dataJson):
             username = dataJson['message']['from']['username']
         except KeyError:
             username = 'NULL'
-        if not dbController.isUserRegistered(chat_id):
-            if dbController.registerUser(chat_id, group, username):
+        if not dbc.is_user_registered(chat_id):
+            if dbc.register_user(chat_id, group, username):
                 sendMessage(chat_id, 'Реєстрація пройшла успішно')
                 logMsg = 'User registered chat_id: {0}'.format(chat_id)
                 logger.info(logMsg)
@@ -86,8 +77,8 @@ def manageBotCommand(dataJson):
         else:
             sendMessage(chat_id, 'Ви вже зареєстровані')
     elif command == '/deleteme':
-        if dbController.isUserRegistered(chat_id):
-            dbController.deleteUser(chat_id)
+        if dbc.is_user_registered(chat_id):
+            dbc.delete_user(chat_id)
             sendMessage(chat_id, 'Видалення пройшло успішно')
             logMsg = 'User was deleted chat_id: {0}'.format(chat_id)
             logger.info(logMsg)
@@ -110,7 +101,7 @@ def manageMainComand(dataJson):
     chat_id = dataJson['message']['chat']['id']
     message = dataJson['message']['text']
     if message == 'Розклад' or message == 'розклад' or message == 'timetable':
-        rawData = dbController.getFacultets()
+        rawData = dbc.get_facultets()
         facultets = []
         for facultet in rawData:
             facultets.append(facultet[0])
@@ -131,7 +122,7 @@ def manageCallbackQuery(dataJson):
 
     # Захоплення курсів, надсилання груп
     elif re.search(r'^\w+_course_[1-4]$', data):
-        rawData = dbController.getGroops(data.split('_')[0], data[-1])
+        rawData = dbc.get_groups(data.split('_')[0], data[-1])
         groops = []
         for groop in rawData:
             groops.append(groop[0])
@@ -146,7 +137,7 @@ def manageCallbackQuery(dataJson):
 
     # Перехід до факультетів з курсів
     elif re.search('course_back', data):
-        rawData = dbController.getFacultets()
+        rawData = dbc.get_facultets()
         facultets = []
         for facultet in rawData:
             facultets.append(facultet[0])
@@ -161,7 +152,7 @@ def manageCallbackQuery(dataJson):
 
     # Перехід з днів тижня до груп
     elif re.search(r'^\w+_course_[1-4]_[^b]\w+-\d+_back$', data):
-        rawData = dbController.getGroops(data.split('_')[0], data.split('_')[2])
+        rawData = dbc.get_groups(data.split('_')[0], data.split('_')[2])
         groops = []
         for groop in rawData:
             groops.append(groop[0])
@@ -183,7 +174,7 @@ def manageCallbackQuery(dataJson):
 
 
 def sendTimetable(chat_id, day, group, daily = False):
-    data = dbController.getTimetable(day, group)
+    data = dbc.get_timetable(day, group)
     text = ''
     if not data == []:
         text = '\t**{0}**\t {1}\n\n'.format(dayofweek[day], group)
@@ -226,7 +217,7 @@ def makeButtons(callbackText = '', number = 3, buttonsArray = []):
     while buttonsArray.__len__() > 0:
         #Відповідь для вибраного факультету
         if callbackText == 'facultet_':
-            callbackData = callbackText + dbController.getShortFacultetName(buttonsArray[0])
+            callbackData = callbackText + dbc.get_facultets(buttonsArray[0])
             text = buttonsArray[0]
 
         #Відповідь для вибраного курсу
@@ -273,7 +264,7 @@ def makeButtons(callbackText = '', number = 3, buttonsArray = []):
 def sendDailyTimetable():
     d = datetime.now()
     if d.strftime('%A') in dowENUA:
-        users = dbController.getUsers()
+        users = dbc.get_users()
         for user in users:
             sendTimetable(user[1], dowENUA[d.strftime('%A')], user[2], daily = True)
 
