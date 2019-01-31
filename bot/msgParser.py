@@ -1,28 +1,23 @@
+import dbController as dbc
+
+
+def isMainCommand(dataJson):
+    if 'message' in dataJson:
+        chat_id = dataJson['message']['chat']['id']
+        command = dbc.get_user_answer(chat_id)
+        return command is not None
+    else:
+        return False
+
+
 def isBotCommand(dataJson):
-    try:
+    if 'message' in dataJson:
         type = dataJson['message']['entities'][0]['type']
         if type == 'bot_command':
             return True
         return False
-    except KeyError:
-        return False
+    return False
 
 
 def isCallbackQuery(dataJson):
-    try:
-        return 'callback_query' in dataJson
-    except KeyError:
-        return False
-
-    return False
-
-def isMainCommand(dataJson):
-    try:
-        message = dataJson['message']['text']
-
-        if message == 'Розклад' or message == 'розклад' or message == 'timetable':
-            return True
-        return False
-
-    except KeyError:
-        return False
+    return 'callback_query' in dataJson
