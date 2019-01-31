@@ -54,9 +54,14 @@ def manageSimpleMessage(dataJson):
 def manageBotCommand(dataJson):
     command = dataJson['message']['text']
     chat_id = dataJson['message']['chat']['id']
+    if 'username' in dataJson['message']['chat']:
+        username = dataJson['message']['chat']['username']
+    else:
+        username = 'NULL'
     if command == '/start':
         text = "Привіт, я бот твого улюбленого університету\nЧим я можу тобі допомогти?"
         addKeyboard(chat_id, text, 'Розклад')
+        dbc.register_user(chat_id, username)
     elif command == '/support':
         text = "Якщо в тебе є якісь пропозиції щодо бота, або ти знайшов недостовірну інформацію \
         то напиши мені на електронну пошту dth.razak@gmail.com"

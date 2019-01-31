@@ -220,7 +220,7 @@ def delete_day_records_for_group(day, group_id):
 
 def register_user(chat_id, username='NULL'):
     code = hash(str(chat_id))
-    sql = 'INSERT INTO users (chat_id, username, verification_code) VALUES ({0}, \"{1}\", {2})'\
+    sql = 'INSERT OR REPLACE INTO users (chat_id, username, verification_code) VALUES ({0}, \"{1}\", {2})'\
         .format(chat_id, username, code)
     c.execute(sql)
     conn.commit()

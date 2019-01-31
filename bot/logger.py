@@ -17,7 +17,7 @@ msg_handler = TimedRotatingFileHandler(path + '/logs/msg', when='W6', interval=1
 msg_handler.suffix = "%Y-%m-%d.log"
 msg_handler.setFormatter(formatter)
 
-db_handler = TimedRotatingFileHandler(path + 'logs/db', when='W6', interval=1, backupCount=5)
+db_handler = TimedRotatingFileHandler(path + '/logs/db', when='W6', interval=1, backupCount=5)
 db_handler.suffix = "%Y-%m-%d.log"
 db_handler.setFormatter(formatter)
 
