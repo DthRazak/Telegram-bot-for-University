@@ -269,3 +269,16 @@ def get_users():
     for row in c.execute(sql):
         users.append(row)
     return users
+
+
+def set_user_answer(chat_id, answer):
+    sql = "UPDATE users SET answer = \"{0}\" WHERE chat_id = {0}".format(answer, chat_id)
+    c.execute(sql)
+    conn.commit()
+    log_msg = 'User {0} set ({1}) to answer'.format(chat_id, answer)
+    logger.info(log_msg)
+
+
+def get_user_answer(chat_id):
+    sql = "SELECT answer FROM users WHERE chat_id = {0}".format(chat_id)
+    return c.execute(sql).fetchone()[0]
