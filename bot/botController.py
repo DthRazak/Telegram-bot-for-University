@@ -81,29 +81,6 @@ def manageBotCommand(dataJson):
                     [{'text': 'Інше'}, {'text': 'Допомога'}]]
         addKeyboard(chat_id, text, keyboard)
         dbc.register_user(chat_id, username)
-    # elif re.search(r'^\/register \w+-\d+$', command):
-    #     group = command.split(' ')[1]
-    #     try:
-    #         username = dataJson['message']['from']['username']
-    #     except KeyError:
-    #         username = 'NULL'
-    #     if not dbc.is_user_registered(chat_id):
-    #         if dbc.register_user(chat_id, group, username):
-    #             sendMessage(chat_id, 'Реєстрація пройшла успішно')
-    #             logMsg = 'User registered chat_id: {0}'.format(chat_id)
-    #             logger.info(logMsg)
-    #         else:
-    #             sendMessage(chat_id, 'Щось пішло не так, спробуйте ще раз')
-    #     else:
-    #         sendMessage(chat_id, 'Ви вже зареєстровані')
-    # elif command == '/deleteme':
-    #     if dbc.is_user_registered(chat_id):
-    #         dbc.delete_user(chat_id)
-    #         sendMessage(chat_id, 'Видалення пройшло успішно')
-    #         logMsg = 'User was deleted chat_id: {0}'.format(chat_id)
-    #         logger.info(logMsg)
-    #     else:
-    #         sendMessage(chat_id, 'Ви ще не були зареєстровані')
     else:
         text = "Нажаль я не розумію такої команди("
         sendMessage(chat_id, text)
@@ -112,6 +89,7 @@ def manageBotCommand(dataJson):
 def manageMainComand(dataJson):
     chat_id = dataJson['message']['chat']['id']
     message = dataJson['message']['text'].lower()
+
     if message == 'розклад':
         rawData = dbc.get_facultets()
         buttons = makeButtons('facultet_', 2, list(rawData.values()))
@@ -123,12 +101,65 @@ def manageMainComand(dataJson):
         pass
         # TODO implement this method to
     elif message == 'інше':
-        pass
-        # TODO and this)
+        dbc.set_user_answer(chat_id, '\"other\"')
+        sub = 'Підписатися' if not dbc.is_user_subscribed(chat_id) else 'Відписатися'
+        keyboard = [[{'text': sub}], [{'text': 'Співпраця'}], [{'text': '<< Назад'}]]
+        addKeyboard(chat_id, ':)', keyboard)
     elif message == 'допомога':
         text = "Якщо у вас є якісь пропозиції щодо бота, або ви знайшли недостовірну інформацію" \
                 " то напишіть мені на електронну пошту dth.razak@gmail.com"
         sendMessage(chat_id, text)
+
+
+def manageUserAnswer(dataJson):
+    chat_id = dataJson['message']['chat']['id']
+    message = dataJson['message']['text'].lower()
+    answer = dbc.get_user_answer(chat_id)
+
+    if answer == 'other':
+        if message == 'підписатися' and not dbc.is_user_subscribed(chat_id):
+            text = 'Введіть будь ласка свою групу:'
+            keyboard = [[{'text': '<< Назад'}]]
+            addKeyboard(chat_id, text, keyboard)
+            dbc.set_user_answer(chat_id, '\"group_sub\"')
+        elif message == 'відписатися' and dbc.is_user_subscribed(chat_id):
+            dbc.unsubscribe(chat_id)
+            text = 'Ви відписалися від розсилки розкладу :)'
+            keyboard = [[{'text': 'Розклад'}], [{'text': 'Пошук викладача'}], [{'text': 'Профком'}],
+                        [{'text': 'Інше'}, {'text': 'Допомога'}]]
+            addKeyboard(chat_id, text, keyboard)
+            dbc.set_user_answer(chat_id, 'NULL')
+        elif message == 'співпраця':
+            text = 'Інформація по співпраці незабаром з\'явиться'
+            sendMessage(chat_id, text)
+        elif message == '<< назад':
+            keyboard = [[{'text': 'Розклад'}], [{'text': 'Пошук викладача'}], [{'text': 'Профком'}],
+                        [{'text': 'Інше'}, {'text': 'Допомога'}]]
+            addKeyboard(chat_id, ':)', keyboard)
+            dbc.set_user_answer(chat_id, 'NULL')
+        else:
+            text = 'Я вас не зрозумів, спробуйте ще раз'
+            sendMessage(chat_id, text)
+    elif answer == 'group_sub':
+        if re.search(r'^\w{3}-\d{2}$', message):
+            group_id = dbc.get_group_id(message.upper())
+            if group_id is not None:
+                dbc.subscribe(chat_id, group_id)
+                keyboard = [[{'text': 'Розклад'}], [{'text': 'Пошук викладача'}], [{'text': 'Профком'}],
+                            [{'text': 'Інше'}, {'text': 'Допомога'}]]
+                addKeyboard(chat_id, ':)', keyboard)
+                dbc.set_user_answer(chat_id, 'NULL')
+            else:
+                text = 'Нажаль така група відсутня у базі даних, спробуйте ще раз або загляніть у підпункт співпраця'
+                sendMessage(chat_id, text)
+        elif message == '<< назад':
+            dbc.set_user_answer(chat_id, 'other')
+            sub = 'Підписатися' if dbc.is_user_subscribed(chat_id) else 'Відписатися'
+            keyboard = [[{'text': sub}], [{'text': 'Співпраця'}], [{'text': '<< Назад'}]]
+            addKeyboard(chat_id, ':)', keyboard)
+        else:
+            text = 'Я вас не зрозумів, спробуйте ще раз'
+            sendMessage(chat_id, text)
 
 
 def manageCallbackQuery(dataJson):

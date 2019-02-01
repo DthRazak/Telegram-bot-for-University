@@ -246,13 +246,8 @@ def delete_user(chat_id):
     logger.info(log_msg)
 
 
-def subscribe(chat_id, group):
-    group_id = get_group_id(group)
-    if group_id is None:
-        log_msg = 'User {0} is trying to subscribe to non-existing group ({1})'.format(chat_id, group)
-        logger.warning(log_msg)
-        return
-    sql = "UPDATE users SET is_subscribed = 1, studing_group = {0}} WHERE chat_id = {1}".format(group_id, chat_id)
+def subscribe(chat_id, group_id):
+    sql = "UPDATE users SET is_subscribed = 1, studing_group = {0} WHERE chat_id = {1}".format(group_id, chat_id)
     c.execute(sql)
     conn.commit()
     log_msg = 'User {0} was subscribed'.format(chat_id)
@@ -282,7 +277,7 @@ def get_users():
 
 
 def set_user_answer(chat_id, answer):
-    sql = "UPDATE users SET answer = \"{0}\" WHERE chat_id = {0}".format(answer, chat_id)
+    sql = "UPDATE users SET answer = {0} WHERE chat_id = {1}".format(answer, chat_id)
     c.execute(sql)
     conn.commit()
     log_msg = 'User {0} set ({1}) to answer'.format(chat_id, answer)
