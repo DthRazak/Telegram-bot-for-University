@@ -34,10 +34,10 @@ def get_timetable(day, group):
 
 def get_groups(facultet, course):
     groups = list()
-    sql = 'SELECT name, group_id FROM groups WHERE (name LIKE \'___-{0}%\') and (facultet = \'{1}\') ORDER BY name;'\
+    sql = 'SELECT name FROM groups WHERE (name LIKE \'___-{0}%\') and (facultet = \'{1}\') ORDER BY name;'\
         .format(course, facultet)
     for row in c.execute(sql):
-        groups.append(row)
+        groups.append(*row)
     return groups
 
 
@@ -49,12 +49,22 @@ def get_group_id(name):
     return None
 
 
+def get_group_by_id(group_id):
+    sql = "SELECT name FROM groups WHERE group_id = {0}".format(group_id)
+    return c.execute(sql).fetchone()[0]
+
+
 def get_facultets():
     facultets = list()
     sql = 'SELECT f_id, name FROM facultets'
     for row in c.execute(sql):
         facultets.append(row)
     return dict(facultets)
+
+
+def get_facultet_id(name):
+    sql = 'SELECT f_id FROM facultets WHERE name = \"{0}\"'.format(name)
+    return c.execute(sql).fetchone()[0]
 
 
 def find_lector(name, day):
@@ -81,7 +91,7 @@ def get_lectors(name):
     sql = 'SELECT l_id, name FROM lectors ' \
           'WHERE (name LIKE \'{0} %\') or (name = \'{0}\') ORDER BY name'.format(name)
     for row in c.execute(sql):
-        lectors.append(row)
+        lectors.append(*row)
     return lectors
 
 
@@ -178,7 +188,7 @@ def write_timetable(data):
 
     lectors = set()
     for l in data['lectors'].unique():
-        for lector in l.split(','):
+        for lector in l.split(', '):
             lectors.add(lector)
     for lector in lectors:
         if get_lector_id(lector) is None:
