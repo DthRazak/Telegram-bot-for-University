@@ -286,4 +286,7 @@ def set_user_answer(chat_id, answer):
 
 def get_user_answer(chat_id):
     sql = "SELECT answer FROM users WHERE chat_id = {0}".format(chat_id)
-    return c.execute(sql).fetchone()[0]
+    answer = c.execute(sql).fetchone()
+    if answer is not None:
+        return answer[0]
+    return None

@@ -157,7 +157,7 @@ def manageUserAnswer(dataJson):
                 text = 'Нажаль така група відсутня у базі даних, спробуйте ще раз або загляніть у підпункт співпраця'
                 sendMessage(chat_id, text)
         elif message == '<< назад':
-            dbc.set_user_answer(chat_id, 'other')
+            dbc.set_user_answer(chat_id, '\"other\"')
             sub = 'Підписатися' if dbc.is_user_subscribed(chat_id) else 'Відписатися'
             keyboard = [[{'text': sub}], [{'text': 'Співпраця'}], [{'text': '<< Назад'}]]
             addKeyboard(chat_id, ':)', keyboard)
