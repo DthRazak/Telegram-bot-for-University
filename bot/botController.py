@@ -95,11 +95,15 @@ def manageMainComand(dataJson):
         buttons = makeButtons('facultet_', 2, list(rawData.values()))
         sendButton(chat_id, 'Зробіть будь-ласка свій вибір', buttons)
     elif message == 'пошук викладача':
-        pass
-        # TODO implement this method
+        dbc.set_user_answer(chat_id, '\"find_lector\"')
+        keyboard = [[{'text': '<< Назад'}]]
+        text = 'Введіть день тижня та ПІБ викладача\n' \
+               'Наприклад: СР Музичук А. О.'
+        addKeyboard(chat_id, text, keyboard)
     elif message == 'профком':
-        pass
-        # TODO implement this method to
+        dbc.set_user_answer(chat_id, '\"ppos\"')
+        keyboard = [[{'text': 'Новини'}], [{'text': 'Питання / Відповідь'}], [{'text': '<< Назад'}]]
+        addKeyboard(chat_id, ':)', keyboard)
     elif message == 'інше':
         dbc.set_user_answer(chat_id, '\"other\"')
         sub = 'Підписатися' if not dbc.is_user_subscribed(chat_id) else 'Відписатися'
@@ -160,6 +164,55 @@ def manageUserAnswer(dataJson):
         else:
             text = 'Я вас не зрозумів, спробуйте ще раз'
             sendMessage(chat_id, text)
+    elif answer == 'find_lector':
+        if not message == '<< назад':
+            arr = message.split(' ', maxsplit=1)
+            if len(arr) > 1:
+                day = arr[0].upper()
+                lector = arr[1].title()
+                if day in dayofweek.keys():
+                    data = dbc.find_lector(lector, day)
+                    if not data == []:
+                        text = '\t**{0}**\t {1}\n\n'.format(dayofweek[day], lector)
+                        for row in data:
+                            number, auditory = row
+
+                            number = emoji[number]
+
+                            if auditory is not None:
+                                auditory = ' ' + auditory + ' ауд.'
+                            else:
+                                auditory = '?'
+
+                            text = text + '{0} пара - {1}\n'.format(number, auditory)
+                    else:
+                        text = 'Нажаль така інформація відсутня у базі даних'
+                else:
+                    text = 'Не коректно введено день тижня, спробуйте ще раз'
+            else:
+                text = 'Не коректне введення, спробуйте ще раз'
+            sendMessage(chat_id, text)
+        else:
+            keyboard = [[{'text': 'Розклад'}], [{'text': 'Пошук викладача'}], [{'text': 'Профком'}],
+                        [{'text': 'Інше'}, {'text': 'Допомога'}]]
+            addKeyboard(chat_id, ':)', keyboard)
+            dbc.set_user_answer(chat_id, 'NULL')
+    elif answer == 'ppos':
+        if message == 'новини':
+            text = 'Ця функціональність незабаром з\'явиться'
+            sendMessage(chat_id, text)
+        elif message == 'питання / відповідь':
+            text = 'Ця функціональність незабаром з\'явиться'
+            sendMessage(chat_id, text)
+        elif message == '<< назад':
+            keyboard = [[{'text': 'Розклад'}], [{'text': 'Пошук викладача'}], [{'text': 'Профком'}],
+                        [{'text': 'Інше'}, {'text': 'Допомога'}]]
+            addKeyboard(chat_id, ':)', keyboard)
+            dbc.set_user_answer(chat_id, 'NULL')
+        else:
+            text = 'Я вас не зрозумів, спробуйте ще раз'
+            sendMessage(chat_id, text)
+
 
 
 def manageCallbackQuery(dataJson):
