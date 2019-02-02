@@ -13,10 +13,12 @@ sslify = SSLify(app)
 def index():
     if request.method == 'POST':
         r = request.get_json()
-        if msgPr.isBotCommand(r):
+        if msgPr.isUserAnswer(r):
+            bot.manageUserAnswer(r)
+        elif msgPr.isBotCommand(r):
             bot.manageBotCommand(r)
         elif msgPr.isMainCommand(r):
-            bot.manageMainComand(r)
+             bot.manageMainComand(r)
         elif msgPr.isCallbackQuery(r):
             bot.manageCallbackQuery(r)
         else:
