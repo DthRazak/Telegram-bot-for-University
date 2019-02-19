@@ -3,12 +3,17 @@ import requests
 import misc.misc
 import dbController as dbc
 import re
+import random
 from logger import msg_logger as logger
 
 
 URL = 'https://api.telegram.org/bot{0}/'.format(misc.misc.token)
 emoji = {1: '1\ufe0f\u20e3', 2: '2\ufe0f\u20e3', 3: '3\ufe0f\u20e3', 4: '4\ufe0f\u20e3', 5: '5\ufe0f\u20e3', \
          6: '6\ufe0f\u20e3', 7: '7\ufe0f\u20e3', 8: '8\ufe0f\u20e3', 9: '9\ufe0f\u20e3', 10: '\ud83d\udd1f'}
+randEmoji = ['\ud83d\ude02', '\ud83d\ude0d', '\ud83d\ude18', '\ud83d\ude0a', '\ud83d\ude01', '\ud83d\ude2d',
+             '\ud83d\ude1c', '\ud83d\ude33', '\ud83d\ude12', '\ud83d\ude14', '\ud83d\ude09', '\ud83d\ude0f',
+             '\ud83d\ude1d', '\ud83d\ude00', '\ud83d\ude10', '\ud83d\ude07','\ud83d\ude06', '\ud83d\ude0b',
+             '\ud83e\udd28', '\ud83d\ude0e', '\ud83e\udd2a', '\ud83d\ude31', '\ud83e\udd2c', '\ud83d\ude13']
 dayofweek = {'ПН': 'Понеділок', 'ВТ': 'Вівторок', 'СР': 'Середа', 'ЧТ': 'Четвер', 'ПТ': 'П\'ятниця'}
 dowENUA = {'Monday': 'ПН', 'Tuesday': 'ВТ', 'Wednesday': 'СР', 'Thursday': 'ЧТ', 'Friday': 'ПТ'}
 
@@ -50,6 +55,19 @@ def removeKeyboard(chat_id):
     return r.json()
 
 
+def maintenance(dataJson):
+    if 'message' in dataJson:
+        chat_id = dataJson['message']['chat']['id']
+    elif 'edited_message' in dataJson:
+        chat_id = dataJson['edited_message']['chat']['id']
+    elif 'callback_query':
+        chat_id = dataJson['callback_query']['message']['chat']['id']
+    else:
+        chat_id = None
+    if chat_id is not None:
+        sendMessage(chat_id, 'Бот на обслуговуванні, спробуйте пізніше')
+
+
 def manageSimpleMessage(dataJson):
     try:
         chat_id = dataJson['message']['chat']['id']
@@ -77,7 +95,7 @@ def manageBotCommand(dataJson):
 
     if command == '/start':
         text = "Привіт, я бот твого улюбленого університету\nЧим я можу тобі допомогти?"
-        keyboard = [[{'text': 'Розклад'}], [{'text': 'Пошук викладача'}], [{'text': 'Профком'}],
+        keyboard = [[{'text': 'Розклад'}], [{'text': 'Пошук викладача'}],
                     [{'text': 'Інше'}, {'text': 'Допомога'}]]
         addKeyboard(chat_id, text, keyboard)
         dbc.register_user(chat_id, username)
@@ -103,12 +121,12 @@ def manageMainComand(dataJson):
     elif message == 'профком':
         dbc.set_user_answer(chat_id, '\"ppos\"')
         keyboard = [[{'text': 'Новини'}], [{'text': 'Питання / Відповідь'}], [{'text': '<< Назад'}]]
-        addKeyboard(chat_id, ':)', keyboard)
+        addKeyboard(chat_id, random.choice(randEmoji), keyboard)
     elif message == 'інше':
         dbc.set_user_answer(chat_id, '\"other\"')
         sub = 'Підписатися' if not dbc.is_user_subscribed(chat_id) else 'Відписатися'
         keyboard = [[{'text': sub}], [{'text': 'Співпраця'}], [{'text': '<< Назад'}]]
-        addKeyboard(chat_id, ':)', keyboard)
+        addKeyboard(chat_id, random.choice(randEmoji), keyboard)
     elif message == 'допомога':
         text = "Якщо у вас є якісь пропозиції щодо бота, або ви знайшли недостовірну інформацію" \
                 " то напишіть мені на електронну пошту dth.razak@gmail.com"
@@ -128,18 +146,20 @@ def manageUserAnswer(dataJson):
             dbc.set_user_answer(chat_id, '\"group_sub\"')
         elif message == 'відписатися' and dbc.is_user_subscribed(chat_id):
             dbc.unsubscribe(chat_id)
-            text = 'Ви відписалися від розсилки розкладу :)'
-            keyboard = [[{'text': 'Розклад'}], [{'text': 'Пошук викладача'}], [{'text': 'Профком'}],
+            text = 'Ви відписалися від розсилки розкладу \ud83d\ude23'
+            keyboard = [[{'text': 'Розклад'}], [{'text': 'Пошук викладача'}],
                         [{'text': 'Інше'}, {'text': 'Допомога'}]]
             addKeyboard(chat_id, text, keyboard)
             dbc.set_user_answer(chat_id, 'NULL')
         elif message == 'співпраця':
-            text = 'Інформація по співпраці незабаром з\'явиться'
-            sendMessage(chat_id, text)
+            text = 'Ваш код: {0}'.format(dbc.get_user_code(chat_id))
+            keyboard = [[{'text': 'Інформація по співпраці', 'url': misc.misc.sub_url}]]
+            reply = {'inline_keyboard': keyboard}
+            sendButton(chat_id, text, reply)
         elif message == '<< назад':
-            keyboard = [[{'text': 'Розклад'}], [{'text': 'Пошук викладача'}], [{'text': 'Профком'}],
+            keyboard = [[{'text': 'Розклад'}], [{'text': 'Пошук викладача'}],
                         [{'text': 'Інше'}, {'text': 'Допомога'}]]
-            addKeyboard(chat_id, ':)', keyboard)
+            addKeyboard(chat_id, random.choice(randEmoji), keyboard)
             dbc.set_user_answer(chat_id, 'NULL')
         else:
             text = 'Я вас не зрозумів, спробуйте ще раз'
@@ -149,9 +169,10 @@ def manageUserAnswer(dataJson):
             group_id = dbc.get_group_id(message.upper())
             if group_id is not None:
                 dbc.subscribe(chat_id, group_id)
-                keyboard = [[{'text': 'Розклад'}], [{'text': 'Пошук викладача'}], [{'text': 'Профком'}],
+                keyboard = [[{'text': 'Розклад'}], [{'text': 'Пошук викладача'}],
                             [{'text': 'Інше'}, {'text': 'Допомога'}]]
-                addKeyboard(chat_id, ':)', keyboard)
+                text = 'Ви підписалися на розсилку розкладу👍 \ud83d\udc4d'
+                addKeyboard(chat_id, text, keyboard)
                 dbc.set_user_answer(chat_id, 'NULL')
             else:
                 text = 'Нажаль така група відсутня у базі даних, спробуйте ще раз або загляніть у підпункт співпраця'
@@ -160,7 +181,7 @@ def manageUserAnswer(dataJson):
             dbc.set_user_answer(chat_id, '\"other\"')
             sub = 'Підписатися' if dbc.is_user_subscribed(chat_id) else 'Відписатися'
             keyboard = [[{'text': sub}], [{'text': 'Співпраця'}], [{'text': '<< Назад'}]]
-            addKeyboard(chat_id, ':)', keyboard)
+            addKeyboard(chat_id, random.choice(randEmoji), keyboard)
         else:
             text = 'Я вас не зрозумів, спробуйте ще раз'
             sendMessage(chat_id, text)
@@ -184,7 +205,7 @@ def manageUserAnswer(dataJson):
                             else:
                                 auditory = '?'
 
-                            text = text + '{0} пара - {1}\n'.format(number, auditory)
+                            text = text + '{0} пара - {1}\n\n'.format(number, auditory)
                     else:
                         text = 'Нажаль така інформація відсутня у базі даних'
                 else:
@@ -193,9 +214,9 @@ def manageUserAnswer(dataJson):
                 text = 'Не коректне введення, спробуйте ще раз'
             sendMessage(chat_id, text)
         else:
-            keyboard = [[{'text': 'Розклад'}], [{'text': 'Пошук викладача'}], [{'text': 'Профком'}],
+            keyboard = [[{'text': 'Розклад'}], [{'text': 'Пошук викладача'}],
                         [{'text': 'Інше'}, {'text': 'Допомога'}]]
-            addKeyboard(chat_id, ':)', keyboard)
+            addKeyboard(chat_id, random.choice(randEmoji), keyboard)
             dbc.set_user_answer(chat_id, 'NULL')
     elif answer == 'ppos':
         if message == 'новини':
@@ -205,9 +226,9 @@ def manageUserAnswer(dataJson):
             text = 'Ця функціональність незабаром з\'явиться'
             sendMessage(chat_id, text)
         elif message == '<< назад':
-            keyboard = [[{'text': 'Розклад'}], [{'text': 'Пошук викладача'}], [{'text': 'Профком'}],
+            keyboard = [[{'text': 'Розклад'}], [{'text': 'Пошук викладача'}],
                         [{'text': 'Інше'}, {'text': 'Допомога'}]]
-            addKeyboard(chat_id, ':)', keyboard)
+            addKeyboard(chat_id, random.choice(randEmoji), keyboard)
             dbc.set_user_answer(chat_id, 'NULL')
         else:
             text = 'Я вас не зрозумів, спробуйте ще раз'
@@ -285,7 +306,7 @@ def sendTimetable(chat_id, day, group_id, daily=False):
     group = dbc.get_group_by_id(group_id)
     text = ''
     if not data == []:
-        text = '\t**{0}**\t {1}'.format(dayofweek[day], group)
+        text = '\t*{0}*\t {1}'.format(dayofweek[day], group)
     else:
         text = 'Нажаль розклад відсутній у базі даних 😔'
     prev_row = (0, '', '')
@@ -298,26 +319,25 @@ def sendTimetable(chat_id, day, group_id, daily=False):
             text = text + ', ' + lector
             continue
 
-        prev_row = (num, subj_name, auditory)
-
         if auditory is not None:
-            auditory = ' ' + auditory + ' ауд.'
+            auditory_name = ' *' + auditory + '* ауд.'
         else:
-            auditory = ''
+            auditory_name = ''
 
         if alternation is not None:
-            alternation = '(' + row[-1] + ')'
+            alternation = '(' + alternation + ')'
         else:
             alternation = ''
 
-        if lector is not None:
-            lector = '\n' + lector
-        else:
+        if lector is None:
             lector = ''
 
         if not daily:
-            text = text + '\n\n{0} пара - {1}, {2} {3} {4} {5}'\
-                .format(number, subj_name, class_type, auditory, alternation, lector)
+            if not num == prev_row[0]:
+                text = text + '\n\n{0} пара - {1}, {2} {3} {4} {5}'\
+                    .format(number, subj_name, class_type, auditory_name, alternation, lector)
+            else:
+                text = text + ', {0} {1}'.format(auditory_name, lector)
         else:
             d = datetime.now()
             if d.isocalendar()[1] % 2 == 1 and alternation == '(чисельник)':
@@ -325,8 +345,13 @@ def sendTimetable(chat_id, day, group_id, daily=False):
             elif d.isocalendar()[1] % 2 == 0 and alternation == '(знаменник)':
                 pass
             else:
-                text = text + '\n\n{0} пара - {1}, {2} {3} {4} {5}' \
-                    .format(number, subj_name, class_type, auditory, alternation, lector)
+                if not num == prev_row[0]:
+                    text = text + '\n\n{0} пара - {1}, {2} {3} {4} {5}' \
+                        .format(number, subj_name, class_type, auditory_name, alternation, lector)
+                else:
+                    text = text + ', {0} {1}'.format(auditory_name, lector)
+
+        prev_row = (num, subj_name, auditory)
 
     sendMessage(chat_id, text)
 
@@ -381,6 +406,6 @@ def makeButtons(callbackText='', number=3, buttonsArray=[]):
 def sendDailyTimetable():
     d = datetime.now()
     if d.strftime('%A') in dowENUA:
-        users = dbc.get_users()
+        users = dbc.get_sub_users()
         for user in users:
-            sendTimetable(user[1], dowENUA[d.strftime('%A')], user[2], daily = True)
+            sendTimetable(user[0], dowENUA[d.strftime('%A')], user[1], daily = True)

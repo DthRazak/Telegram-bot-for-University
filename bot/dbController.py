@@ -26,7 +26,8 @@ def get_timetable(day, group):
         INNER JOIN lectors ON lectors.l_id = lectors_subjects_composite.l_id
         INNER JOIN subjects ON subjects.s_id = lectors_subjects_composite.s_id
     WHERE
-        (group_id = {0}) and (day = \"{1}\");""".format(group, day)
+        (group_id = {0}) and (day = \"{1}\")
+    ORDER BY number;""".format(group, day)
     for row in c.execute(sql):
         timetable.append(row)
     return timetable
@@ -72,14 +73,15 @@ def find_lector(name, day):
     if l_id is None:
         return []
     sql = """
-    SELECT
+    SELECT DISTINCT
         number,
         auditory
     FROM
         classes
         INNER JOIN (SELECT * FROM lectors_subjects_composite WHERE l_id = {0}) lsc 
             ON classes.c_id = lsc.c_id
-    WHERE day = \"{1}\"""".format(l_id, day)
+    WHERE day = \"{1}\"
+    ORDER BY number""".format(l_id, day)
     timetable = list()
     for row in c.execute(sql):
         timetable.append(row)
@@ -171,10 +173,10 @@ def read_csv(filename):
 
 # if all data is correct
 def write_single_record(group, day, number, subject_name, class_type, auditory='', alternation='', lectors=[]):
-    group_id = get_group_id(group)
+    group_id = get_group_id(group.strip())
     subject_id = get_subject_id(subject_name)
     lectors_id = [get_lector_id(l) for l in lectors]
-    add_class(number, day, class_type, auditory, alternation)
+    add_class(number, day.strip(), class_type.strip(), auditory, alternation.strip())
     class_id = c.lastrowid  # weak method
     add_lectors_subjects_composite(subject_id, class_id, lectors_id)
     add_timetable(group_id, class_id)
@@ -229,7 +231,7 @@ def delete_day_records_for_group(day, group_id):
 
 
 def register_user(chat_id, username='NULL'):
-    code = hash(str(chat_id))
+    code = abs(hash(str(chat_id)))
     sql = 'INSERT OR REPLACE INTO users (chat_id, username, verification_code) VALUES ({0}, \"{1}\", {2})'\
         .format(chat_id, username, code)
     c.execute(sql)
@@ -290,3 +292,14 @@ def get_user_answer(chat_id):
     if answer is not None:
         return answer[0]
     return None
+
+
+def get_sub_users():
+    sql = """
+    SELECT chat_id, studing_group FROM users WHERE is_subscribed = 1"""
+    return c.execute(sql).fetchall()
+
+
+def get_user_code(chat_id):
+    sql = "SELECT verification_code FROM users WHERE chat_id = {0}".format(chat_id)
+    return c.execute(sql).fetchone()[0]
