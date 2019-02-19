@@ -88,6 +88,23 @@ def find_lector(name, day):
     return timetable
 
 
+def find_groups_by_auditory(auditory, day):
+    sql = """
+    SELECT 
+        number, name
+    FROM
+        (SELECT number, c_id
+        FROM classes
+        WHERE auditory = \"{0}\" AND day = \"{1}\") cls
+        INNER JOIN timetable ON cls.c_id = timetable.class_id
+        INNER JOIN groups ON groups.group_id = timetable.group_id
+    ORDER BY number""".format(auditory, day)
+    timetable = list()
+    for row in c.execute(sql):
+        timetable.append(row)
+    return timetable
+
+
 def get_lectors(name):
     lectors = list()
     sql = 'SELECT l_id, name FROM lectors ' \

@@ -112,6 +112,10 @@ def manageMainComand(dataJson):
         rawData = dbc.get_facultets()
         buttons = makeButtons('facultet_', 2, list(rawData.values()))
         sendButton(chat_id, 'Зробіть будь-ласка свій вибір', buttons)
+    elif message == 'пошук':
+        dbc.set_user_answer(chat_id, '\"find\"')
+        keyboard = [[{'text': 'Викладач'}, {'text': 'Аудиторія'}], [{'text': '<< Назад'}]]
+        addKeyboard(chat_id, random.choice(randEmoji), keyboard)
     elif message == 'пошук викладача':
         dbc.set_user_answer(chat_id, '\"find_lector\"')
         keyboard = [[{'text': '<< Назад'}]]
@@ -185,6 +189,27 @@ def manageUserAnswer(dataJson):
         else:
             text = 'Я вас не зрозумів, спробуйте ще раз'
             sendMessage(chat_id, text)
+    elif answer == 'find':
+        if message == 'викладач':
+            dbc.set_user_answer(chat_id, '\"find_lector\"')
+            keyboard = [[{'text': '<< Назад'}]]
+            text = 'Введіть день тижня та ПІБ викладача\n' \
+                   'Наприклад: СР Музичук А. О.'
+            addKeyboard(chat_id, text, keyboard)
+        elif message == 'аудиторія':
+            dbc.set_user_answer(chat_id, '\"find_auditory\"')
+            keyboard = [[{'text': '<< Назад'}]]
+            text = 'Введіть день тижня та групу\n' \
+                   'Наприклад: ЧТ 439'
+            addKeyboard(chat_id, text, keyboard)
+        elif message == '<< назад':
+            keyboard = [[{'text': 'Розклад'}], [{'text': 'Пошук'}],
+                        [{'text': 'Інше'}, {'text': 'Допомога'}]]
+            addKeyboard(chat_id, random.choice(randEmoji), keyboard)
+            dbc.set_user_answer(chat_id, 'NULL')
+        else:
+            text = 'Я вас не зрозумів, спробуйте ще раз'
+            sendMessage(chat_id, text)
     elif answer == 'find_lector':
         if not message == '<< назад':
             arr = message.split(' ', maxsplit=1)
@@ -214,10 +239,36 @@ def manageUserAnswer(dataJson):
                 text = 'Не коректне введення, спробуйте ще раз'
             sendMessage(chat_id, text)
         else:
-            keyboard = [[{'text': 'Розклад'}], [{'text': 'Пошук викладача'}],
-                        [{'text': 'Інше'}, {'text': 'Допомога'}]]
+            dbc.set_user_answer(chat_id, '\"find\"')
+            keyboard = [[{'text': 'Викладач'}, {'text': 'Аудиторія'}], [{'text': '<< Назад'}]]
             addKeyboard(chat_id, random.choice(randEmoji), keyboard)
-            dbc.set_user_answer(chat_id, 'NULL')
+    elif answer == 'find_auditory':
+        if not message == '<< назад':
+            arr = message.split(' ', maxsplit=1)
+            if len(arr) > 1:
+                day = arr[0].upper()
+                auditory = arr[1].lower()
+                text = '\t**{0}**\t {1} ауд.'.format(dayofweek[day], auditory)
+                data = dbc.find_groups_by_auditory(auditory, day)
+                if not data == []:
+                    prev_num = 0
+                    for row in data:
+                        number, group = row
+                        if prev_num == number:
+                            text = text + ', {0}'.format(group)
+                        else:
+                            text = text + '\n\n{0} пара - {1}'.format(emoji[number], group)
+                        prev_num = number
+                    text = text + "\n\nPS. Інформація надана для аудиторій незалежно від корпусу."
+                else:
+                    text = 'Нажаль така інформація відсутня у базі даних'
+            else:
+                text = 'Не коректне введення, спробуйте ще раз'
+            sendMessage(chat_id, text)
+        else:
+            dbc.set_user_answer(chat_id, '\"find\"')
+            keyboard = [[{'text': 'Викладач'}, {'text': 'Аудиторія'}], [{'text': '<< Назад'}]]
+            addKeyboard(chat_id, random.choice(randEmoji), keyboard)
     elif answer == 'ppos':
         if message == 'новини':
             text = 'Ця функціональність незабаром з\'явиться'

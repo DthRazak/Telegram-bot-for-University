@@ -1,7 +1,7 @@
 import dbController as dbc
 
 
-MAIN_COMMANDS = ['розклад', 'пошук викладача', 'профком', 'інше', 'допомога']
+MAIN_COMMANDS = ['розклад', 'пошук', 'пошук викладача', 'профком', 'інше', 'допомога']
 
 
 def isMainCommand(dataJson):
