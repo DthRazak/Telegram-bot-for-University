@@ -95,10 +95,19 @@ def manageBotCommand(dataJson):
 
     if command == '/start':
         text = "Привіт, я бот твого улюбленого університету\nЧим я можу тобі допомогти?"
-        keyboard = [[{'text': 'Розклад'}], [{'text': 'Пошук викладача'}],
+        keyboard = [[{'text': 'Розклад'}], [{'text': 'Пошук'}],
                     [{'text': 'Інше'}, {'text': 'Допомога'}]]
         addKeyboard(chat_id, text, keyboard)
         dbc.register_user(chat_id, username)
+    elif command == '/keyboard':
+        keyboard = [[{'text': 'Розклад'}], [{'text': 'Пошук'}],
+                    [{'text': 'Інше'}, {'text': 'Допомога'}]]
+        addKeyboard(chat_id, random.choice(randEmoji), keyboard)
+        dbc.set_user_answer(chat_id, 'NULL')
+    elif command == '/help':
+        text = "Якщо у вас є якісь пропозиції щодо бота, або ви знайшли недостовірну інформацію" \
+               " то напишіть мені на електронну пошту dth.razak@gmail.com\n" \
+               "Щоб повернути клавіатуру відправте /keyboard"
     else:
         text = "Нажаль я не розумію такої команди("
         sendMessage(chat_id, text)
@@ -151,7 +160,7 @@ def manageUserAnswer(dataJson):
         elif message == 'відписатися' and dbc.is_user_subscribed(chat_id):
             dbc.unsubscribe(chat_id)
             text = 'Ви відписалися від розсилки розкладу \ud83d\ude23'
-            keyboard = [[{'text': 'Розклад'}], [{'text': 'Пошук викладача'}],
+            keyboard = [[{'text': 'Розклад'}], [{'text': 'Пошук'}],
                         [{'text': 'Інше'}, {'text': 'Допомога'}]]
             addKeyboard(chat_id, text, keyboard)
             dbc.set_user_answer(chat_id, 'NULL')
@@ -161,7 +170,7 @@ def manageUserAnswer(dataJson):
             reply = {'inline_keyboard': keyboard}
             sendButton(chat_id, text, reply)
         elif message == '<< назад':
-            keyboard = [[{'text': 'Розклад'}], [{'text': 'Пошук викладача'}],
+            keyboard = [[{'text': 'Розклад'}], [{'text': 'Пошук'}],
                         [{'text': 'Інше'}, {'text': 'Допомога'}]]
             addKeyboard(chat_id, random.choice(randEmoji), keyboard)
             dbc.set_user_answer(chat_id, 'NULL')
@@ -173,7 +182,7 @@ def manageUserAnswer(dataJson):
             group_id = dbc.get_group_id(message.upper())
             if group_id is not None:
                 dbc.subscribe(chat_id, group_id)
-                keyboard = [[{'text': 'Розклад'}], [{'text': 'Пошук викладача'}],
+                keyboard = [[{'text': 'Розклад'}], [{'text': 'Пошук'}],
                             [{'text': 'Інше'}, {'text': 'Допомога'}]]
                 text = 'Ви підписалися на розсилку розкладу👍 \ud83d\udc4d'
                 addKeyboard(chat_id, text, keyboard)
@@ -248,20 +257,23 @@ def manageUserAnswer(dataJson):
             if len(arr) > 1:
                 day = arr[0].upper()
                 auditory = arr[1].lower()
-                text = '\t**{0}**\t {1} ауд.'.format(dayofweek[day], auditory)
-                data = dbc.find_groups_by_auditory(auditory, day)
-                if not data == []:
-                    prev_num = 0
-                    for row in data:
-                        number, group = row
-                        if prev_num == number:
-                            text = text + ', {0}'.format(group)
-                        else:
-                            text = text + '\n\n{0} пара - {1}'.format(emoji[number], group)
-                        prev_num = number
-                    text = text + "\n\nPS. Інформація надана для аудиторій незалежно від корпусу."
+                if day in dayofweek.keys():
+                    text = '\t**{0}**\t {1} ауд.'.format(dayofweek[day], auditory)
+                    data = dbc.find_groups_by_auditory(auditory, day)
+                    if not data == []:
+                        prev_num = 0
+                        for row in data:
+                            number, group = row
+                            if prev_num == number:
+                                text = text + ', {0}'.format(group)
+                            else:
+                                text = text + '\n\n{0} пара - {1}'.format(emoji[number], group)
+                            prev_num = number
+                        text = text + "\n\nPS. Інформація надана для аудиторій незалежно від корпусу."
+                    else:
+                        text = 'Нажаль така інформація відсутня у базі даних'
                 else:
-                    text = 'Нажаль така інформація відсутня у базі даних'
+                    text = 'Не коректно введено день тижня, спробуйте ще раз'
             else:
                 text = 'Не коректне введення, спробуйте ще раз'
             sendMessage(chat_id, text)
