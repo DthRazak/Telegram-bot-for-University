@@ -371,14 +371,14 @@ def sendTimetable(chat_id, day, group_id, daily=False):
     if not data == []:
         text = '\t*{0}*\t {1}'.format(dayofweek[day], group)
     else:
-        text = 'Нажаль розклад відсутній у базі даних 😔'
-    prev_row = (0, '', '')
+        text = 'На жаль, розклад відсутній у базі даних 😔'
+    prev_row = (0, '', '', '')
     for row in data:
-        num, subj_name, auditory, class_type, alternation, lector = row
+        num, subj_name, auditory, class_type, alt, lector = row
 
         number = emoji[row[0]]
 
-        if prev_row == (num, subj_name, auditory):
+        if prev_row == (num, subj_name, auditory, alt):
             text = text + ', ' + lector
             continue
 
@@ -387,8 +387,8 @@ def sendTimetable(chat_id, day, group_id, daily=False):
         else:
             auditory_name = ''
 
-        if alternation is not None:
-            alternation = '(' + alternation + ')'
+        if alt is not None:
+            alternation = '(' + alt + ')'
         else:
             alternation = ''
 
@@ -396,7 +396,7 @@ def sendTimetable(chat_id, day, group_id, daily=False):
             lector = ''
 
         if not daily:
-            if not num == prev_row[0]:
+            if not num == prev_row[0] or not subj_name == prev_row[1]:
                 text = text + '\n\n{0} пара - {1}, {2} {3} {4} {5}'\
                     .format(number, subj_name, class_type, auditory_name, alternation, lector)
             else:
@@ -414,7 +414,7 @@ def sendTimetable(chat_id, day, group_id, daily=False):
                 else:
                     text = text + ', {0} {1}'.format(auditory_name, lector)
 
-        prev_row = (num, subj_name, auditory)
+        prev_row = (num, subj_name, auditory, alt)
 
     sendMessage(chat_id, text)
 

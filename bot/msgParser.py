@@ -6,9 +6,12 @@ MAIN_COMMANDS = ['розклад', 'пошук', 'пошук викладача'
 
 def isMainCommand(dataJson):
     if 'message' in dataJson:
-        message = dataJson['message']['text'].lower()
-        if message in MAIN_COMMANDS:
-            return True
+        if 'text' in dataJson['message']:
+            message = dataJson['message']['text'].lower()
+            if message in MAIN_COMMANDS:
+                return True
+            else:
+                return False
         else:
             return False
     return False
